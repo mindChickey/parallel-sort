@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
 
     // 生成随机数并写入映射的内存
     for (int i = 0; i < NUM_INTEGERS; i++) {
-        unsigned num = rand() ^ (1u << 31);
+        unsigned num = rand() & ((1u << 31) - 1);
         int written = sprintf(current_pos, "%u\n", num);
         current_pos += written;
         total_bytes += written;

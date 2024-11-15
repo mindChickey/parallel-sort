@@ -5,23 +5,7 @@
 #include <time.h>
 #include "radixsort.h"
 
-struct thread_context {
-  pthread_barrier_t barrier;
-  unsigned threadNum;
-
-  unsigned* countMatrix;
-};
-
 struct thread_context context;
-
-struct thread_info {
-  long* arr; 
-  long* brr;
-
-  unsigned index;     
-  unsigned cur_start;
-  unsigned cur_len;
-};
 
 unsigned* getCountAddress(unsigned thread_index, long mask){
   return &context.countMatrix[BUCKET_COUNT * thread_index + mask];

@@ -1,5 +1,5 @@
 
-#include <thread>
+#include <pthread.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -8,7 +8,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <vector>
+#include "radixsort.h"
 
 #define N 100
 #define MAX_NUM_LEN 11  // 最大数字长度(10位)加换行符(1位)
@@ -16,24 +16,8 @@
 char inputData[N * MAX_NUM_LEN];
 unsigned inputSize;
 
-inline unsigned char readHex1(char* p){
-  unsigned char b = *(p - 1) - '0';
-  unsigned char a = *(p - 2) - '0';
-  return (a << 4) | b;
-}
-
-long readHex(char* start, char* end){
-  char arr[16] = {'0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'};
-  unsigned len = end - start;
-  memcpy(arr + 16 - len, start, len);
-  long r = 0;
-  unsigned char* buffer = (unsigned char*)&r;
-
-  for(unsigned i = 0; i < 8; i++){
-    buffer[i] = readHex1(arr + 16 - i * 2);
-  }
-  return r;
-}
+typedef long (*readHexFT)(char*);
+extern readHexFT readHexFS[16];
 
 void readFile(const char *filename) {
   FILE* file = fopen(filename, "r");
@@ -44,44 +28,62 @@ void readFile(const char *filename) {
   fclose(file);
 }
 
-void parseSection(char* start, char* end){
+unsigned parseSection(long* nums, char* start, char* end){
+  unsigned n = 0;
   while(start < end){
-    char* p = strchr(start, '\n');
-    unsigned long hex = readHex(start, p);
+    char* end = strchr(start, '\n');
+    unsigned long hex = readHexFS[end-start-1](start);
+    nums[n] = hex;
+    n++;
+    start = end + 1;
   }
+  return n;
 }
 
-void parseInput(unsigned threadNum) {
-  unsigned len0 = inputSize / threadNum - 3;
-  char* start = inputData;
-  char* inputEnd = inputData + inputSize;
-  std::vector<std::thread*> threads;
+void parseInput(unsigned index) {
+  unsigned len0 = inputSize / context.threadNum;
+  char* start = index == 0 ? inputData : strchr(inputData + index * len0, '\n') + 1;
+  char* end = index == context.threadNum - 1 ? inputData + inputSize : strchr(inputData + (index+1) * len0, '\n') + 1;
 
-  while(start < inputEnd){
-    char* end = start + len0 < inputEnd ? strchr(start + len0, '\n') + 1 : inputEnd;
-    // printf("%u %u %u\n", start, end, end - start);
-    std::thread* t = new std::thread(parseSection, start, end);
-    threads.push_back(t);
-    start = end;
+  long* nums = (long*)malloc((end-start) / 2 * sizeof(long));
+  unsigned n = parseSection(nums, start, end);
+  printf("num: %u\n", n);
+  print_larray(nums, n);
+  free(nums);
+ 
+  // printf("%lu %lu %lu\n", start - inputData, end - inputData, end - start);
+}
+
+void* handle_thread(void* arg){
+  long index = (long)arg;
+  parseInput(index);
+  return NULL;
+}
+
+void handle(unsigned threadNum){
+  context.threadNum = threadNum;
+  pthread_t thread_handles[threadNum];
+  for (unsigned i = 0; i < threadNum; i++) {
+    pthread_create(&thread_handles[i], NULL, handle_thread, (void *)(long)i);
   }
-  for(std::thread* t : threads){
-    t->join();
-    delete t;
+
+  for (unsigned i = 0; i < threadNum; i++) {
+    pthread_join(thread_handles[i], NULL);
   }
 }
 
 int main(int argc, char *argv[]) {
-  if (argc != 2) {
-    fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+  if (argc != 3) {
+    fprintf(stderr, "Usage: %s <fileName> <threadNum>\n", argv[0]);
     return 1;
   }
 
+  unsigned threadNum = atoi(argv[2]);
   readFile(argv[1]);
 
-  printf("size: %u\n", inputSize);
+  printf("total %u\n", inputSize);
+  handle(threadNum);
 
-  unsigned threadNum = std::thread::hardware_concurrency();
-  parseInput(threadNum);
 
 
   return 0;
