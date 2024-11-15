@@ -4,7 +4,7 @@
 
 #include <pthread.h>
 
-#define BITS 32
+#define BITS 40
 #define BUCKET_BITS 8
 #define BUCKET_COUNT (1lu << BUCKET_BITS)
 #define BUCKET_BITMASK (BUCKET_COUNT - 1)
