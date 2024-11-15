@@ -72,21 +72,23 @@ void count(struct thread_info* info, unsigned bit_pos){
   }
 }
 
-unsigned getCountSum(unsigned t0, unsigned t1, unsigned k){
-  unsigned count = 0;
-  for(unsigned t = t0; t < t1; t++){
-    count += *getCountAddress(t, k);
-  }
-  return count;
-}
-
 void getIndices(struct thread_info* info, unsigned indices[BUCKET_COUNT]){
   memset(indices, 0, BUCKET_COUNT * sizeof(unsigned));
   unsigned index = info->index;
-  indices[0] = getCountSum(0, index, 0);
-  for(unsigned k = 1; k < BUCKET_COUNT; k++){
-    unsigned allk_1 = indices[k-1] +  getCountSum(index, context.threadNum, k-1);
-    indices[k] = allk_1 + getCountSum(0, index, k);
+  for(unsigned i = 0; i < index; i++){
+    unsigned* counts = getCountAddress(i, 0);
+    for(unsigned k = 0; k < BUCKET_COUNT; k++){
+      indices[k] += counts[k];
+    }
+  }
+  for(unsigned i = index; i < context.threadNum; i++){
+    unsigned* counts = getCountAddress(i, 0);
+    for(unsigned k = 0; k < BUCKET_COUNT - 1; k++){
+      indices[k+1] += counts[k];
+    }
+  }
+  for(unsigned k = 0; k < BUCKET_COUNT - 1; k++){
+    indices[k+1] += indices[k];
   }
 }
 
