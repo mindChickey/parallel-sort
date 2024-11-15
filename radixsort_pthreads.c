@@ -8,19 +8,23 @@
 #include <time.h>
 
 #define BITS 29
-pthread_barrier_t barrier;
 
 long Arr[100000000];
 long Brr[100000000];
 
-struct rs_args {
+struct thread_context {
+  pthread_barrier_t barrier;
+  unsigned threadNum;
+
+  unsigned *nzeros;
+  unsigned *nones;
+};
+
+struct thread_context context;
+
+struct thread_info {
   long* arr; 
   long* brr;
-  unsigned elemNum;       
-  unsigned threadNum; 
-
-  unsigned *nzeros;   
-  unsigned *nones;    
 
   unsigned index;     
   unsigned cur_start;
@@ -46,7 +50,7 @@ unsigned array_is_sorted(long* arr, unsigned n) {
   return 1;
 }
 
-unsigned count0(struct rs_args* p, unsigned bit_pos){
+unsigned count0(struct thread_info* p, unsigned bit_pos){
   unsigned count = 0;
   for (unsigned i = p->cur_start; i < p->cur_start + p->cur_len; i++) {
     if (((p->arr[i] >> bit_pos) & 1) == 0) {
@@ -56,21 +60,21 @@ unsigned count0(struct rs_args* p, unsigned bit_pos){
   return count;
 }
 
-void getIndices(struct rs_args* p, unsigned* p0, unsigned* p1){
+void getIndices(struct thread_info* p, unsigned* p0, unsigned* p1){
   /* Get starting indices. */
   unsigned index0 = 0;
   unsigned index1 = p->cur_start;
   for (unsigned i = 0; i < p->index; i++) {
-    index0 += p->nzeros[i];
+    index0 += context.nzeros[i];
   }
-  for (unsigned i = p->index; i < p->threadNum; i++) {
-    index1 += p->nzeros[i];
+  for (unsigned i = p->index; i < context.threadNum; i++) {
+    index1 += context.nzeros[i];
   }
   *p0 = index0;
   *p1 = index1;
 }
 
-void moveValues(struct rs_args* p, unsigned bit_pos, unsigned index0, unsigned index1){
+void moveValues(struct thread_info* p, unsigned bit_pos, unsigned index0, unsigned index1){
   /* Move values to correct position. */
   for (unsigned i = p->cur_start; i < p->cur_start + p->cur_len; i++) {
     if (((p->arr[i] >> bit_pos) & 1) == 0) {
@@ -81,24 +85,24 @@ void moveValues(struct rs_args* p, unsigned bit_pos, unsigned index0, unsigned i
   }
 }
 
-void swapSrcDest(struct rs_args* p){
+void swapSrcDest(struct thread_info* p){
   long* tmp = p->arr;
   p->arr = p->brr;
   p->brr = tmp;
 }
 
 void* radix_sort_thread(void* arg){
-  struct rs_args* p = (struct rs_args*)arg;
+  struct thread_info* p = (struct thread_info*)arg;
   unsigned index0, index1;
 
   for (unsigned bit_pos = 0; bit_pos < BITS; bit_pos++) {
     unsigned num0 = count0(p, bit_pos);
-    p->nzeros[p->index] = num0;
+    context.nzeros[p->index] = num0;
 
-    pthread_barrier_wait(&barrier);
+    pthread_barrier_wait(&context.barrier);
     getIndices(p, &index0, &index1);
     moveValues(p, bit_pos, index0, index1);
-    pthread_barrier_wait(&barrier);
+    pthread_barrier_wait(&context.barrier);
     swapSrcDest(p);
   }
   return NULL;
@@ -109,21 +113,21 @@ long* radix_sort(unsigned n, unsigned t) {
   unsigned nzeros[t];
   unsigned nones[t];
   pthread_t thread_handles[t];
-  struct rs_args args[t];
+  struct thread_info args[t];
 
-  pthread_barrier_init(&barrier, NULL, t);
+  context.nzeros = nzeros,
+  context.nones = nones,
+  context.threadNum = t,
+
+  pthread_barrier_init(&context.barrier, NULL, t);
 
   unsigned len = n / t;
   for (unsigned i = 0; i < t; i++) {
     unsigned start = i * len;
-    struct rs_args p = {
-      .index = i,
+    struct thread_info p = {
       .arr = Arr,
       .brr = Brr,
-      .elemNum = n,
-      .nzeros = nzeros,
-      .nones = nones,
-      .threadNum = t,
+      .index = i,
       .cur_start = start,
       .cur_len = i == t - 1 ? n - start : len
     };
@@ -135,7 +139,7 @@ long* radix_sort(unsigned n, unsigned t) {
     pthread_join(thread_handles[i], NULL);
   }
 
-  pthread_barrier_destroy(&barrier);
+  pthread_barrier_destroy(&context.barrier);
 
   return BITS % 2 == 0 ? Arr : Brr;
 }
