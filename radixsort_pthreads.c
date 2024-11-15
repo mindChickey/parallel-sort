@@ -7,13 +7,13 @@
 #include <string.h>
 #include <time.h>
 
-#define BITS 30
-#define BUCKET_BITS 1
+#define BITS 32
+#define BUCKET_BITS 8
 #define BUCKET_COUNT (1lu << BUCKET_BITS)
 #define BUCKET_BITMASK (BUCKET_COUNT - 1)
 
-long Arr[100000000];
-long Brr[100000000];
+long Arr[1 << 27];
+long Brr[1 << 27];
 
 struct thread_context {
   pthread_barrier_t barrier;
@@ -35,7 +35,7 @@ struct thread_info {
 
 void print_larray(long* arr, unsigned n) {
   for (unsigned i = 0; i < n; i++)
-    printf("%ld \n", arr[i]);
+    printf("%lx \n", arr[i]);
   printf("\n");
 }
 
@@ -48,7 +48,7 @@ void print_uarray(unsigned* arr, unsigned n) {
 void random_array(long* arr, unsigned n) {
   srandom(time(0));
   for (unsigned i = 0; i < n; i++) {
-    arr[i] = (unsigned)random() & (unsigned)((1 << BITS) - 1);
+    arr[i] = random() & ((1l << BITS) - 1);
   }
 }
 
@@ -64,10 +64,11 @@ unsigned* getCountAddress(unsigned thread_index, long mask){
 }
 
 void count(struct thread_info* info, unsigned bit_pos){
+  unsigned* counts = getCountAddress(info->index, 0);
+  memset(counts, 0, sizeof(unsigned) * BUCKET_COUNT);
   for (unsigned i = info->cur_start; i < info->cur_start + info->cur_len; i++) {
     long mask = (info->arr[i] >> bit_pos) & BUCKET_BITMASK;
-    unsigned* countAddress = getCountAddress(info->index, mask);
-    *countAddress = *countAddress + 1;
+    counts[mask]++;
   }
 }
 
@@ -80,6 +81,7 @@ unsigned getCountSum(unsigned t0, unsigned t1, unsigned k){
 }
 
 void getIndices(struct thread_info* info, unsigned indices[BUCKET_COUNT]){
+  memset(indices, 0, BUCKET_COUNT * sizeof(unsigned));
   unsigned index = info->index;
   indices[0] = getCountSum(0, index, 0);
   for(unsigned k = 1; k < BUCKET_COUNT; k++){
@@ -109,8 +111,6 @@ void* radix_sort_thread(void* arg){
   unsigned indices[BUCKET_COUNT];
 
   for (unsigned bit_pos = 0; bit_pos < BITS; bit_pos += BUCKET_BITS) {
-    memset(getCountAddress(info->index, 0), 0, sizeof(unsigned) * BUCKET_COUNT);
-    memset(indices, 0, BUCKET_COUNT * sizeof(unsigned));
     count(info, bit_pos);
 
     pthread_barrier_wait(&context.barrier);
@@ -153,7 +153,7 @@ long* radix_sort(unsigned elemNum, unsigned threadNum) {
 
   pthread_barrier_destroy(&context.barrier);
 
-  return BITS % 2 == 0 ? Arr : Brr;
+  return BITS / BUCKET_BITS % 2 == 0 ? Arr : Brr;
 }
 
 int main(int argc, char *argv[]) {
