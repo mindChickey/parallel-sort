@@ -7,7 +7,10 @@
 #include <string.h>
 #include <time.h>
 
-#define BITS 29
+#define BITS 30
+#define BUCKET_BITS 1
+#define BUCKET_COUNT (1lu << BUCKET_BITS)
+#define BUCKET_BITMASK (BUCKET_COUNT - 1)
 
 long Arr[100000000];
 long Brr[100000000];
@@ -16,8 +19,7 @@ struct thread_context {
   pthread_barrier_t barrier;
   unsigned threadNum;
 
-  unsigned *nzeros;
-  unsigned *nones;
+  unsigned* countMatrix;
 };
 
 struct thread_context context;
@@ -31,15 +33,22 @@ struct thread_info {
   unsigned cur_len;
 };
 
-void print_array(long* arr, unsigned n) {
+void print_larray(long* arr, unsigned n) {
   for (unsigned i = 0; i < n; i++)
     printf("%ld \n", arr[i]);
   printf("\n");
 }
 
+void print_uarray(unsigned* arr, unsigned n) {
+  for (unsigned i = 0; i < n; i++)
+    printf("%u \n", arr[i]);
+  printf("\n");
+}
+
 void random_array(long* arr, unsigned n) {
+  srandom(time(0));
   for (unsigned i = 0; i < n; i++) {
-    arr[i] = (unsigned)lrand48() & (unsigned)((1 << BITS) - 1);
+    arr[i] = (unsigned)random() & (unsigned)((1 << BITS) - 1);
   }
 }
 
@@ -50,92 +59,95 @@ unsigned array_is_sorted(long* arr, unsigned n) {
   return 1;
 }
 
-unsigned count0(struct thread_info* p, unsigned bit_pos){
+unsigned* getCountAddress(unsigned thread_index, long mask){
+  return &context.countMatrix[BUCKET_COUNT * thread_index + mask];
+}
+
+void count(struct thread_info* info, unsigned bit_pos){
+  for (unsigned i = info->cur_start; i < info->cur_start + info->cur_len; i++) {
+    long mask = (info->arr[i] >> bit_pos) & BUCKET_BITMASK;
+    unsigned* countAddress = getCountAddress(info->index, mask);
+    *countAddress = *countAddress + 1;
+  }
+}
+
+unsigned getCountSum(unsigned t0, unsigned t1, unsigned k){
   unsigned count = 0;
-  for (unsigned i = p->cur_start; i < p->cur_start + p->cur_len; i++) {
-    if (((p->arr[i] >> bit_pos) & 1) == 0) {
-      count++;
-    }
+  for(unsigned t = t0; t < t1; t++){
+    count += *getCountAddress(t, k);
   }
   return count;
 }
 
-void getIndices(struct thread_info* p, unsigned* p0, unsigned* p1){
-  /* Get starting indices. */
-  unsigned index0 = 0;
-  unsigned index1 = p->cur_start;
-  for (unsigned i = 0; i < p->index; i++) {
-    index0 += context.nzeros[i];
+void getIndices(struct thread_info* info, unsigned indices[BUCKET_COUNT]){
+  unsigned index = info->index;
+  indices[0] = getCountSum(0, index, 0);
+  for(unsigned k = 1; k < BUCKET_COUNT; k++){
+    unsigned allk_1 = indices[k-1] +  getCountSum(index, context.threadNum, k-1);
+    indices[k] = allk_1 + getCountSum(0, index, k);
   }
-  for (unsigned i = p->index; i < context.threadNum; i++) {
-    index1 += context.nzeros[i];
-  }
-  *p0 = index0;
-  *p1 = index1;
 }
 
-void moveValues(struct thread_info* p, unsigned bit_pos, unsigned index0, unsigned index1){
+void moveValues(struct thread_info* info, unsigned bit_pos, unsigned indices[BUCKET_COUNT]){
   /* Move values to correct position. */
-  for (unsigned i = p->cur_start; i < p->cur_start + p->cur_len; i++) {
-    if (((p->arr[i] >> bit_pos) & 1) == 0) {
-      p->brr[index0++] = p->arr[i];
-    } else {
-      p->brr[index1++] = p->arr[i];
-    }
+  for (unsigned i = info->cur_start; i < info->cur_start + info->cur_len; i++) {
+    long mask = (info->arr[i] >> bit_pos) & BUCKET_BITMASK;
+    unsigned index = indices[mask];
+    info->brr[index] = info->arr[i];
+    indices[mask]++;
   }
 }
 
-void swapSrcDest(struct thread_info* p){
-  long* tmp = p->arr;
-  p->arr = p->brr;
-  p->brr = tmp;
+void swapSrcDest(struct thread_info* info){
+  long* tmp = info->arr;
+  info->arr = info->brr;
+  info->brr = tmp;
 }
 
 void* radix_sort_thread(void* arg){
-  struct thread_info* p = (struct thread_info*)arg;
-  unsigned index0, index1;
+  struct thread_info* info = (struct thread_info*)arg;
+  unsigned indices[BUCKET_COUNT];
 
-  for (unsigned bit_pos = 0; bit_pos < BITS; bit_pos++) {
-    unsigned num0 = count0(p, bit_pos);
-    context.nzeros[p->index] = num0;
+  for (unsigned bit_pos = 0; bit_pos < BITS; bit_pos += BUCKET_BITS) {
+    memset(getCountAddress(info->index, 0), 0, sizeof(unsigned) * BUCKET_COUNT);
+    memset(indices, 0, BUCKET_COUNT * sizeof(unsigned));
+    count(info, bit_pos);
 
     pthread_barrier_wait(&context.barrier);
-    getIndices(p, &index0, &index1);
-    moveValues(p, bit_pos, index0, index1);
+    getIndices(info, indices);
+    moveValues(info, bit_pos, indices);
     pthread_barrier_wait(&context.barrier);
-    swapSrcDest(p);
+    swapSrcDest(info);
   }
   return NULL;
 }
 
-long* radix_sort(unsigned n, unsigned t) {
+long* radix_sort(unsigned elemNum, unsigned threadNum) {
 
-  unsigned nzeros[t];
-  unsigned nones[t];
-  pthread_t thread_handles[t];
-  struct thread_info args[t];
+  unsigned countMatrix[BUCKET_COUNT * threadNum];
 
-  context.nzeros = nzeros,
-  context.nones = nones,
-  context.threadNum = t,
+  context.threadNum = threadNum;
+  context.countMatrix = countMatrix;
 
-  pthread_barrier_init(&context.barrier, NULL, t);
+  pthread_barrier_init(&context.barrier, NULL, threadNum);
 
-  unsigned len = n / t;
-  for (unsigned i = 0; i < t; i++) {
+  pthread_t thread_handles[threadNum];
+  struct thread_info args[threadNum];
+  unsigned len = elemNum / threadNum;
+  for (unsigned i = 0; i < threadNum; i++) {
     unsigned start = i * len;
     struct thread_info p = {
       .arr = Arr,
       .brr = Brr,
       .index = i,
       .cur_start = start,
-      .cur_len = i == t - 1 ? n - start : len
+      .cur_len = i == threadNum - 1 ? elemNum - start : len
     };
     args[i] = p;
     pthread_create(&thread_handles[i], NULL, radix_sort_thread, (void *)(args+i));
   }
 
-  for (unsigned i = 0; i < t; i++) {
+  for (unsigned i = 0; i < threadNum; i++) {
     pthread_join(thread_handles[i], NULL);
   }
 
@@ -162,3 +174,18 @@ int main(int argc, char *argv[]) {
 
   return 0;
 }
+
+// int main1(){
+//   Arr[0] = 2;
+//   Arr[1] = 1;
+//   Arr[2] = 6;
+//   Arr[3] = 5;
+//   unsigned elemNum = 4;
+//   unsigned threadNum = 1;
+//   long* order = radix_sort(elemNum, threadNum);
+// 
+//   unsigned ok = array_is_sorted(order, elemNum);
+//   printf("result: %d\n", ok);
+// 
+//   return 0;
+// }
