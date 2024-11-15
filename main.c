@@ -12,13 +12,16 @@
 
 #define N 100
 // #define N 100000000
-#define MAX_NUM_LEN 11  // 最大数字长度(10位)加换行符(1位)
+#define MAX_NUM_LEN 11
 
 char inputData[N * MAX_NUM_LEN];
 unsigned inputSize;
 
 typedef long (*readHexFT)(char*);
 extern readHexFT readHexFS[16];
+
+unsigned* threadLenCount;
+void writeOutput(struct thread_info* info);
 
 void readFile(const char *filename) {
   FILE* file = fopen(filename, "r");
@@ -29,11 +32,15 @@ void readFile(const char *filename) {
   fclose(file);
 }
 
-unsigned parseSection(long* nums, char* start, char* end){
+unsigned parseSection(unsigned threadIndex, long* nums, char* start, char* end){
   unsigned n = 0;
+  unsigned* count = threadLenCount + threadIndex * 10;
   while(start < end){
     char* end = strchr(start, '\n');
-    unsigned long hex = readHexFS[end-start-1](start);
+    unsigned len_1 = end-start-1;
+    count[len_1]++;
+
+    unsigned long hex = readHexFS[len_1](start);
     nums[n] = hex;
     n++;
     start = end + 1;
@@ -47,7 +54,7 @@ ArrayT parseInput(unsigned index) {
   char* end = index == context.threadNum - 1 ? inputData + inputSize : strchr(inputData + (index+1) * len0, '\n') + 1;
 
   long* nums = (long*)malloc((end-start) / 2 * sizeof(long));
-  unsigned n = parseSection(nums, start, end);
+  unsigned n = parseSection(index, nums, start, end);
 
   ArrayT arr = {nums, n};
   return arr;
@@ -59,8 +66,8 @@ void* handle_thread(void* arg){
   info->currentArray = arr;
 
   radix_sort_thread(arg);
-
   free(arr.start);
+  writeOutput(info);
   return NULL;
 }
 
@@ -106,6 +113,10 @@ int main(int argc, char *argv[]) {
 
   long* Arr = (long*)malloc(sizeof(long) * (1 << 27));
   long* Brr = (long*)malloc(sizeof(long) * (1 << 27));
+
+  unsigned threadNumLenSize = sizeof(unsigned) * threadNum * 10;
+  threadLenCount = (unsigned*)malloc(threadNumLenSize);
+  memset(threadLenCount, 0, threadNumLenSize);
 
   long* order = handle(Arr, Brr, N, threadNum);
 

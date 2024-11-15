@@ -1,6 +1,6 @@
 
-main: main.c radixsort.c radixsort.h utils.c hex.o Makefile
-	clang main.c radixsort.c utils.c hex.o -o main -O3
+main: Makefile main.c radixsort.c radixsort.h utils.c hex.o writeOutput.c
+	clang main.c radixsort.c utils.c hex.o writeOutput.c -o main -O3
 
 test: test.c radixsort.c radixsort.h utils.c Makefile
 	clang test.c radixsort.c utils.c -o test -O3
