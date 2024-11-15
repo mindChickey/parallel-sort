@@ -14,8 +14,9 @@ unsigned* getCountAddress(unsigned thread_index, long mask){
 void count(struct thread_info* info, unsigned bit_pos){
   unsigned* counts = getCountAddress(info->index, 0);
   memset(counts, 0, sizeof(unsigned) * BUCKET_COUNT);
-  for (unsigned i = info->cur_start; i < info->cur_start + info->cur_len; i++) {
-    long mask = (info->arr[i] >> bit_pos) & BUCKET_BITMASK;
+  ArrayT arr = info->currentArray;
+  for (long* p = arr.start; p < arr.start + arr.length; p++) {
+    long mask = (*p >> bit_pos) & BUCKET_BITMASK;
     counts[mask]++;
   }
 }
@@ -42,15 +43,26 @@ void getIndices(struct thread_info* info, unsigned indices[BUCKET_COUNT]){
 
 void moveValues(struct thread_info* info, unsigned bit_pos, unsigned indices[BUCKET_COUNT]){
   /* Move values to correct position. */
-  for (unsigned i = info->cur_start; i < info->cur_start + info->cur_len; i++) {
-    long mask = (info->arr[i] >> bit_pos) & BUCKET_BITMASK;
+  ArrayT arr = info->currentArray;
+  for (long* p = arr.start; p < arr.start + arr.length; p++) {
+    long mask = (*p >> bit_pos) & BUCKET_BITMASK;
     unsigned index = indices[mask];
-    info->brr[index] = info->arr[i];
+    info->brr[index] = *p;
     indices[mask]++;
   }
 }
 
 void swapSrcDest(struct thread_info* info){
+  unsigned index = info->index;
+  unsigned elemNum = context.elemNum;
+  unsigned threadNum = context.threadNum;
+
+  unsigned len = elemNum / threadNum;
+  unsigned start = index * len;
+
+  info->currentArray.start = info->brr + start,
+  info->currentArray.length = index == threadNum - 1 ? elemNum - start : len;
+
   long* tmp = info->arr;
   info->arr = info->brr;
   info->brr = tmp;
@@ -72,10 +84,11 @@ void* radix_sort_thread(void* arg){
   return NULL;
 }
 
-long* radix_sort(long* Arr, long* Brr, unsigned elemNum, unsigned threadNum) {
+long* radix_sort1(long* Arr, long* Brr, ArrayT* inputs, unsigned elemNum, unsigned threadNum) {
 
   unsigned countMatrix[BUCKET_COUNT * threadNum];
 
+  context.elemNum = elemNum;
   context.threadNum = threadNum;
   context.countMatrix = countMatrix;
 
@@ -83,15 +96,12 @@ long* radix_sort(long* Arr, long* Brr, unsigned elemNum, unsigned threadNum) {
 
   pthread_t thread_handles[threadNum];
   struct thread_info args[threadNum];
-  unsigned len = elemNum / threadNum;
   for (unsigned i = 0; i < threadNum; i++) {
-    unsigned start = i * len;
     struct thread_info p = {
       .arr = Arr,
       .brr = Brr,
       .index = i,
-      .cur_start = start,
-      .cur_len = i == threadNum - 1 ? elemNum - start : len
+      .currentArray = inputs[i]
     };
     args[i] = p;
     pthread_create(&thread_handles[i], NULL, radix_sort_thread, (void *)(args+i));
@@ -104,4 +114,15 @@ long* radix_sort(long* Arr, long* Brr, unsigned elemNum, unsigned threadNum) {
   pthread_barrier_destroy(&context.barrier);
 
   return BITS / BUCKET_BITS % 2 == 0 ? Arr : Brr;
+}
+
+long* radix_sort(long* Arr, long* Brr, unsigned elemNum, unsigned threadNum) {
+  ArrayT arrs[threadNum];
+  unsigned len = elemNum / threadNum;
+  for (unsigned i = 0; i < threadNum; i++) {
+    unsigned start = i * len;
+    arrs[i].start = Arr + start;
+    arrs[i].length = i == threadNum - 1 ? elemNum - start : len;
+  }
+  return radix_sort1(Arr, Brr, arrs, elemNum, threadNum);
 }

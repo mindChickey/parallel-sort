@@ -17,6 +17,7 @@ unsigned array_is_sorted(long* arr, unsigned n);
 
 struct thread_context {
   pthread_barrier_t barrier;
+  unsigned elemNum;
   unsigned threadNum;
 
   unsigned* countMatrix;
@@ -24,15 +25,21 @@ struct thread_context {
 
 extern struct thread_context context;
 
+typedef struct {
+  long* start;
+  unsigned length;
+} ArrayT;
+
 struct thread_info {
   long* arr; 
   long* brr;
 
   unsigned index;     
-  unsigned cur_start;
-  unsigned cur_len;
+  ArrayT currentArray;
 };
 
+long* radix_sort1(long* Arr, long* Brr, ArrayT* inputs, unsigned elemNum, unsigned threadNum);
 long* radix_sort(long* Arr, long* Brr, unsigned elemNum, unsigned threadNum);
+void* radix_sort_thread(void* arg);
 
 #endif

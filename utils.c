@@ -13,13 +13,13 @@ unsigned long getClockTime(){
 
 void print_larray(long* arr, unsigned n) {
   for (unsigned i = 0; i < n; i++)
-    printf("%lx \n", arr[i]);
+    printf("%lx ", arr[i]);
   printf("\n");
 }
 
 void print_uarray(unsigned* arr, unsigned n) {
   for (unsigned i = 0; i < n; i++)
-    printf("%u \n", arr[i]);
+    printf("%u ", arr[i]);
   printf("\n");
 }
 
