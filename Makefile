@@ -1,6 +1,6 @@
 
-radixsort_pthreads: radixsort_pthreads.c Makefile
-	clang radixsort_pthreads.c -o radixsort_pthreads -O3
+test: test.c radixsort.c Makefile
+	clang test.c radixsort.c -o test -O3
 
 main: main.cpp Makefile
 	clang++ main.cpp -o main -O3
