@@ -9,8 +9,10 @@
 #define BUCKET_COUNT (1lu << BUCKET_BITS)
 #define BUCKET_BITMASK (BUCKET_COUNT - 1)
 
+typedef long T;
+
 typedef struct {
-  long* data;
+  T* data;
   unsigned length;
 } ArrayT;
 
@@ -25,16 +27,16 @@ struct thread_context {
 extern struct thread_context context;
 
 typedef struct {
-  long* arr; 
-  long* brr;
+  T* arr; 
+  T* brr;
 
   unsigned index;     
   ArrayT currentArray;
 } thread_info;
 
-ArrayT getSection(long* arr, unsigned elemNum, unsigned secNum, unsigned index);
-long* radix_sort(long* Arr, long* Brr, unsigned elemNum, unsigned threadNum);
-long* radix_sort1(long* Arr, long* Brr, unsigned elemNum, unsigned threadNum, void *(*__start_routine)(void *));
+ArrayT getSection(T* arr, unsigned elemNum, unsigned secNum, unsigned index);
+T* radix_sort(T* Arr, T* Brr, unsigned elemNum, unsigned threadNum);
+T* radix_sort1(T* Arr, T* Brr, unsigned elemNum, unsigned threadNum, void *(*__start_routine)(void *));
 void radix_sort_thread(thread_info* info);
 
 #endif

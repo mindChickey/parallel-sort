@@ -5,7 +5,7 @@
 
 struct thread_context context;
 
-ArrayT getSection(long* arr, unsigned elemNum, unsigned secNum, unsigned index){
+ArrayT getSection(T* arr, unsigned elemNum, unsigned secNum, unsigned index){
   ArrayT r;
   unsigned len = elemNum / secNum;
   unsigned start = index * len;
@@ -15,7 +15,7 @@ ArrayT getSection(long* arr, unsigned elemNum, unsigned secNum, unsigned index){
   return r;
 }
 
-unsigned* getCountAddress(unsigned thread_index, long mask){
+unsigned* getCountAddress(unsigned thread_index, unsigned mask){
   return &context.countMatrix[BUCKET_COUNT * thread_index + mask];
 }
 
@@ -23,8 +23,8 @@ void count(thread_info* info, unsigned bit_pos){
   unsigned* counts = getCountAddress(info->index, 0);
   memset(counts, 0, sizeof(unsigned) * BUCKET_COUNT);
   ArrayT arr = info->currentArray;
-  for (long* p = arr.data; p < arr.data + arr.length; p++) {
-    long mask = (*p >> bit_pos) & BUCKET_BITMASK;
+  for (T* p = arr.data; p < arr.data + arr.length; p++) {
+    T mask = (*p >> bit_pos) & BUCKET_BITMASK;
     counts[mask]++;
   }
 }
@@ -52,8 +52,8 @@ void getIndices(thread_info* info, unsigned indices[BUCKET_COUNT]){
 void moveValues(thread_info* info, unsigned bit_pos, unsigned indices[BUCKET_COUNT]){
   /* Move values to correct position. */
   ArrayT arr = info->currentArray;
-  for (long* p = arr.data; p < arr.data + arr.length; p++) {
-    long mask = (*p >> bit_pos) & BUCKET_BITMASK;
+  for (T* p = arr.data; p < arr.data + arr.length; p++) {
+    T mask = (*p >> bit_pos) & BUCKET_BITMASK;
     unsigned index = indices[mask];
     info->brr[index] = *p;
     indices[mask]++;
@@ -61,7 +61,7 @@ void moveValues(thread_info* info, unsigned bit_pos, unsigned indices[BUCKET_COU
 }
 
 void swapArrBrr(thread_info* info){
-  long* tmp = info->arr;
+  T* tmp = info->arr;
   info->arr = info->brr;
   info->brr = tmp;
   info->currentArray = getSection(info->arr, context.elemNum, context.threadNum, info->index);
@@ -88,7 +88,7 @@ void* standard_radix_sort_thread(void* arg){
   return NULL;
 }
 
-long* radix_sort1(long* Arr, long* Brr, unsigned elemNum, unsigned threadNum, void *(*__start_routine)(void *)) {
+T* radix_sort1(T* Arr, T* Brr, unsigned elemNum, unsigned threadNum, void *(*__start_routine)(void *)) {
 
   unsigned countMatrix[BUCKET_COUNT * threadNum];
 
@@ -115,6 +115,6 @@ long* radix_sort1(long* Arr, long* Brr, unsigned elemNum, unsigned threadNum, vo
   return args[0].arr;
 }
 
-long* radix_sort(long* Arr, long* Brr, unsigned elemNum, unsigned threadNum) {
+T* radix_sort(T* Arr, T* Brr, unsigned elemNum, unsigned threadNum) {
   return radix_sort1(Arr, Brr, elemNum, threadNum, standard_radix_sort_thread);
 }
