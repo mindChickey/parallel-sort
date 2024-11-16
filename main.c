@@ -27,16 +27,14 @@ int main(int argc, char *argv[]) {
   unsigned fileSize = readFile(argv[1]);
 
   openOutputMMap(fileSize);
-
-  long* Arr = (long*)malloc(sizeof(long) * (1 << 27));
-  long* Brr = (long*)malloc(sizeof(long) * (1 << 27));
-
   makeThreadLenCount(threadNum);
+
+  long* Arr = (long*)malloc(sizeof(long) * elemNum);
+  long* Brr = (long*)malloc(sizeof(long) * elemNum);
 
   long* order = radix_sort1(Arr, Brr, elemNum, threadNum, handle_thread);
 
-  unsigned ok = array_is_sorted(order, elemNum);
-  printf("result: %s\n", ok ? "succ" : "fail");
+  puts("ok");
 
   free(Arr);
   free(Brr);

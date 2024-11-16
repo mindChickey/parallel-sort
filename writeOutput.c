@@ -65,4 +65,5 @@ void openOutputMMap(unsigned outputSize){
 void closeOutputMMap(unsigned outputSize){
   msync(outputMMap, outputSize, MS_SYNC);
   munmap(outputMMap, outputSize);
+  free(threadLenCount);
 }

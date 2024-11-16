@@ -101,11 +101,7 @@ long* radix_sort1(long* Arr, long* Brr, unsigned elemNum, unsigned threadNum, vo
   pthread_t thread_handles[threadNum];
   struct thread_info args[threadNum];
   for (unsigned i = 0; i < threadNum; i++) {
-    struct thread_info p = {
-      .arr = Arr,
-      .brr = Brr,
-      .index = i,
-    };
+    struct thread_info p = { .arr = Arr, .brr = Brr, .index = i };
     args[i] = p;
     pthread_create(&thread_handles[i], NULL, __start_routine, (void *)(args+i));
   }
