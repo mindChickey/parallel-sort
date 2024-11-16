@@ -24,17 +24,17 @@ struct thread_context {
 
 extern struct thread_context context;
 
-struct thread_info {
+typedef struct {
   long* arr; 
   long* brr;
 
   unsigned index;     
   ArrayT currentArray;
-};
+} thread_info;
 
 ArrayT getSection(long* arr, unsigned elemNum, unsigned secNum, unsigned index);
 long* radix_sort(long* Arr, long* Brr, unsigned elemNum, unsigned threadNum);
 long* radix_sort1(long* Arr, long* Brr, unsigned elemNum, unsigned threadNum, void *(*__start_routine)(void *));
-void radix_sort_thread(struct thread_info* info);
+void radix_sort_thread(thread_info* info);
 
 #endif

@@ -14,7 +14,7 @@ unsigned readFile(const char *filename);
 ArrayT parseInput(unsigned index);
 
 
-void writeOutputThread(struct thread_info* info);
+void writeOutputThread(thread_info* info);
 void openOutputMMap(unsigned outputSize);
 void closeOutputMMap(unsigned outputSize);
 void makeThreadLenCount(unsigned threadNum);

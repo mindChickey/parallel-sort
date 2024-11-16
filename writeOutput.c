@@ -26,7 +26,7 @@ void addupLenCount(unsigned threadIndex){
   }
 }
 
-void dump(char* outputStart, long* nums, unsigned n, unsigned len, struct thread_info* info){
+void dump(char* outputStart, long* nums, unsigned n, unsigned len, thread_info* info){
   unsigned threadNum = context.threadNum;
   unsigned n0 = n / threadNum;
   char* str = outputStart + info->index * n0 * len;
@@ -38,7 +38,7 @@ void dump(char* outputStart, long* nums, unsigned n, unsigned len, struct thread
   }
 }
 
-void writeOutputThread(struct thread_info* info){
+void writeOutputThread(thread_info* info){
   addupLenCount(info->index);
   pthread_barrier_wait(&context.barrier);
 

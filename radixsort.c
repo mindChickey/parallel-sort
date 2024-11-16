@@ -19,7 +19,7 @@ unsigned* getCountAddress(unsigned thread_index, long mask){
   return &context.countMatrix[BUCKET_COUNT * thread_index + mask];
 }
 
-void count(struct thread_info* info, unsigned bit_pos){
+void count(thread_info* info, unsigned bit_pos){
   unsigned* counts = getCountAddress(info->index, 0);
   memset(counts, 0, sizeof(unsigned) * BUCKET_COUNT);
   ArrayT arr = info->currentArray;
@@ -29,7 +29,7 @@ void count(struct thread_info* info, unsigned bit_pos){
   }
 }
 
-void getIndices(struct thread_info* info, unsigned indices[BUCKET_COUNT]){
+void getIndices(thread_info* info, unsigned indices[BUCKET_COUNT]){
   memset(indices, 0, BUCKET_COUNT * sizeof(unsigned));
   unsigned index = info->index;
   for(unsigned i = 0; i < index; i++){
@@ -49,7 +49,7 @@ void getIndices(struct thread_info* info, unsigned indices[BUCKET_COUNT]){
   }
 }
 
-void moveValues(struct thread_info* info, unsigned bit_pos, unsigned indices[BUCKET_COUNT]){
+void moveValues(thread_info* info, unsigned bit_pos, unsigned indices[BUCKET_COUNT]){
   /* Move values to correct position. */
   ArrayT arr = info->currentArray;
   for (long* p = arr.data; p < arr.data + arr.length; p++) {
@@ -60,14 +60,14 @@ void moveValues(struct thread_info* info, unsigned bit_pos, unsigned indices[BUC
   }
 }
 
-void swapArrBrr(struct thread_info* info){
+void swapArrBrr(thread_info* info){
   long* tmp = info->arr;
   info->arr = info->brr;
   info->brr = tmp;
   info->currentArray = getSection(info->arr, context.elemNum, context.threadNum, info->index);
 }
 
-void radix_sort_thread(struct thread_info* info){
+void radix_sort_thread(thread_info* info){
   unsigned indices[BUCKET_COUNT];
 
   for (unsigned bit_pos = 0; bit_pos < BITS; bit_pos += BUCKET_BITS) {
@@ -82,7 +82,7 @@ void radix_sort_thread(struct thread_info* info){
 }
 
 void* standard_radix_sort_thread(void* arg){
-  struct thread_info* info = (struct thread_info*)arg;
+  thread_info* info = (thread_info*)arg;
   info->currentArray = getSection(info->arr, context.elemNum, context.threadNum, info->index);
   radix_sort_thread(info);
   return NULL;
@@ -99,9 +99,9 @@ long* radix_sort1(long* Arr, long* Brr, unsigned elemNum, unsigned threadNum, vo
   pthread_barrier_init(&context.barrier, NULL, threadNum);
 
   pthread_t thread_handles[threadNum];
-  struct thread_info args[threadNum];
+  thread_info args[threadNum];
   for (unsigned i = 0; i < threadNum; i++) {
-    struct thread_info p = { .arr = Arr, .brr = Brr, .index = i };
+    thread_info p = { .arr = Arr, .brr = Brr, .index = i };
     args[i] = p;
     pthread_create(&thread_handles[i], NULL, __start_routine, (void *)(args+i));
   }

@@ -9,7 +9,7 @@ long nums1[] = {3, 1, 2, 8};
 ArrayT arrs[2] = {{nums0, 3}, {nums1, 4}};
 
 void* merge_radix_sort_thread(void* arg){
-  struct thread_info* info = (struct thread_info*)arg;
+  thread_info* info = (thread_info*)arg;
   info->currentArray = arrs[info->index];
   radix_sort_thread(info);
   return NULL;

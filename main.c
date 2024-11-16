@@ -6,7 +6,7 @@
 #include "header.h"
 
 void* handle_thread(void* arg){
-  struct thread_info* info = (struct thread_info*)arg;
+  thread_info* info = (thread_info*)arg;
   ArrayT arr = parseInput(info->index);
   info->currentArray = arr;
 
