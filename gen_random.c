@@ -5,7 +5,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
-#include <string.h>
 
 #define MAX_NUM_LEN 11  // 最大数字长度(10位)加换行符(1位)
 

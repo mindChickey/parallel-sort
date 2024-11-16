@@ -1,8 +1,6 @@
 
 #include <pthread.h>
-#include <stdio.h>
 #include <string.h>
-#include <time.h>
 #include "radixsort.h"
 
 struct thread_context context;

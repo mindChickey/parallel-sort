@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
-#include "radixsort.h"
+#include "header.h"
 
 unsigned long getClockTime(){
   struct timespec t;

@@ -1,18 +1,18 @@
 
-#include <pthread.h>
-#include <errno.h>
 #include <fcntl.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/mman.h>
-#include <sys/stat.h>
 #include <unistd.h>
 #include "radixsort.h"
 #include "header.h"
 
 char* outputMMap;
 unsigned LenCount[10];
+unsigned* threadLenCount;
+
+void makeThreadLenCount(unsigned threadNum){
+  threadLenCount = (unsigned*)calloc(10* threadNum, sizeof(unsigned));
+}
 
 void makeLenCount(unsigned index){
   for(unsigned len = index; len < 10; len+=context.threadNum){

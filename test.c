@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "radixsort.h"
+#include "header.h"
 
 void test0(long* Arr, long* Brr){
   long nums0[] = {7, 6, 9}; 

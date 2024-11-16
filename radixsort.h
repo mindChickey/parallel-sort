@@ -9,12 +9,6 @@
 #define BUCKET_COUNT (1lu << BUCKET_BITS)
 #define BUCKET_BITMASK (BUCKET_COUNT - 1)
 
-unsigned long getClockTime();
-void random_array(long* arr, unsigned n);
-void print_larray(long* arr, unsigned n);
-void print_uarray(unsigned* arr, unsigned n);
-unsigned array_is_sorted(long* arr, unsigned n);
-
 struct thread_context {
   pthread_barrier_t barrier;
   unsigned elemNum;
