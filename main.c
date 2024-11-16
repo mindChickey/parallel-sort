@@ -66,13 +66,12 @@ int main(int argc, char *argv[]) {
 
   long* order = handle(Arr, Brr, elemNum, threadNum);
 
-  closeOutputMMap(fileSize);
-
   unsigned ok = array_is_sorted(order, elemNum);
-  printf("result: %d\n", ok);
+  printf("result: %s\n", ok ? "succ" : "fail");
 
   free(Arr);
   free(Brr);
+  closeOutputMMap(fileSize);
 
   return 0;
 }
