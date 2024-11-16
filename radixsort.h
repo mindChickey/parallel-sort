@@ -10,7 +10,7 @@
 #define BUCKET_BITMASK (BUCKET_COUNT - 1)
 
 typedef struct {
-  long* start;
+  long* data;
   unsigned length;
 } ArrayT;
 

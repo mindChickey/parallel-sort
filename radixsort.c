@@ -10,7 +10,7 @@ ArrayT getSection(long* arr, unsigned elemNum, unsigned secNum, unsigned index){
   unsigned len = elemNum / secNum;
   unsigned start = index * len;
 
-  r.start = arr + start;
+  r.data = arr + start;
   r.length = index == secNum - 1 ? elemNum - start : len;
   return r;
 }
@@ -23,7 +23,7 @@ void count(struct thread_info* info, unsigned bit_pos){
   unsigned* counts = getCountAddress(info->index, 0);
   memset(counts, 0, sizeof(unsigned) * BUCKET_COUNT);
   ArrayT arr = info->currentArray;
-  for (long* p = arr.start; p < arr.start + arr.length; p++) {
+  for (long* p = arr.data; p < arr.data + arr.length; p++) {
     long mask = (*p >> bit_pos) & BUCKET_BITMASK;
     counts[mask]++;
   }
@@ -52,7 +52,7 @@ void getIndices(struct thread_info* info, unsigned indices[BUCKET_COUNT]){
 void moveValues(struct thread_info* info, unsigned bit_pos, unsigned indices[BUCKET_COUNT]){
   /* Move values to correct position. */
   ArrayT arr = info->currentArray;
-  for (long* p = arr.start; p < arr.start + arr.length; p++) {
+  for (long* p = arr.data; p < arr.data + arr.length; p++) {
     long mask = (*p >> bit_pos) & BUCKET_BITMASK;
     unsigned index = indices[mask];
     info->brr[index] = *p;
@@ -60,20 +60,11 @@ void moveValues(struct thread_info* info, unsigned bit_pos, unsigned indices[BUC
   }
 }
 
-void swapSrcDest(struct thread_info* info){
-  unsigned index = info->index;
-  unsigned elemNum = context.elemNum;
-  unsigned threadNum = context.threadNum;
-
-  unsigned len = elemNum / threadNum;
-  unsigned start = index * len;
-
-  info->currentArray.start = info->brr + start,
-  info->currentArray.length = index == threadNum - 1 ? elemNum - start : len;
-
+void swapArrBrr(struct thread_info* info){
   long* tmp = info->arr;
   info->arr = info->brr;
   info->brr = tmp;
+  info->currentArray = getSection(info->arr, context.elemNum, context.threadNum, info->index);
 }
 
 void* radix_sort_thread(void* arg){
@@ -87,7 +78,7 @@ void* radix_sort_thread(void* arg){
     getIndices(info, indices);
     moveValues(info, bit_pos, indices);
     pthread_barrier_wait(&context.barrier);
-    swapSrcDest(info);
+    swapArrBrr(info);
   }
   return NULL;
 }
@@ -126,11 +117,8 @@ long* radix_sort1(long* Arr, long* Brr, ArrayT* inputs, unsigned elemNum, unsign
 
 long* radix_sort(long* Arr, long* Brr, unsigned elemNum, unsigned threadNum) {
   ArrayT arrs[threadNum];
-  unsigned len = elemNum / threadNum;
   for (unsigned i = 0; i < threadNum; i++) {
-    unsigned start = i * len;
-    arrs[i].start = Arr + start;
-    arrs[i].length = i == threadNum - 1 ? elemNum - start : len;
+    arrs[i] = getSection(Arr, elemNum, threadNum, i);
   }
   return radix_sort1(Arr, Brr, arrs, elemNum, threadNum);
 }

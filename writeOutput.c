@@ -18,7 +18,7 @@ unsigned* getThreadLenCount(unsigned threadIndex){
   return threadLenCount + threadIndex * 10;
 }
 
-void makeLenCount(unsigned threadIndex){
+void addupLenCount(unsigned threadIndex){
   for(unsigned len = threadIndex; len < 10; len+=context.threadNum){
     for(unsigned i = 0; i < context.threadNum; i++){
       LenCount[len] += threadLenCount[i*10 + len];
@@ -30,17 +30,16 @@ void dump(char* outputStart, long* nums, unsigned n, unsigned len, struct thread
   unsigned threadNum = context.threadNum;
   unsigned n0 = n / threadNum;
   char* str = outputStart + info->index * n0 * len;
-  long* nums1 = nums + info->index * n0;
-  unsigned n1 = info->index == threadNum - 1 ? nums + n - nums1 : n0;
+  ArrayT arr = getSection(nums, n, threadNum, info->index);
 
-  for(unsigned i = 0; i < n1; i++){
-    writeHexFS[len-2](str + i * len, nums1[i]);
+  for(unsigned i = 0; i < arr.length; i++){
+    writeHexFS[len-2](str + i * len, arr.data[i]);
     str[i*len + len - 1] = '\n';
   }
 }
 
 void writeOutputThread(struct thread_info* info){
-  makeLenCount(info->index);
+  addupLenCount(info->index);
   pthread_barrier_wait(&context.barrier);
 
   char* outputStart = outputMMap;

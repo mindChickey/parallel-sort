@@ -24,14 +24,14 @@ unsigned parseSection(unsigned threadIndex, long* nums, char* start, char* end){
   unsigned n = 0;
   unsigned* count = getThreadLenCount(threadIndex);
   while(start < end){
-    char* end = strchr(start, '\n');
-    unsigned len_1 = end-start-1;
+    char* end0 = strchr(start, '\n');
+    unsigned len_1 = end0-start-1;
     count[len_1]++;
 
     unsigned long hex = readHexFS[len_1](start);
     nums[n] = hex;
     n++;
-    start = end + 1;
+    start = end0 + 1;
   }
   return n;
 }

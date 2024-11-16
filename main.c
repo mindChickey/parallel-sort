@@ -5,16 +5,13 @@
 #include "radixsort.h"
 #include "header.h"
 
-#define N 100
-//#define N 100000000
-
 void* handle_thread(void* arg){
   struct thread_info* info = (struct thread_info*)arg;
   ArrayT arr = parseInput(info->index);
   info->currentArray = arr;
 
   radix_sort_thread(arg);
-  free(arr.start);
+  free(arr.data);
   writeOutputThread(info);
   return NULL;
 }
@@ -51,12 +48,13 @@ long* handle(long* Arr, long* Brr, unsigned elemNum, unsigned threadNum) {
 }
 
 int main(int argc, char *argv[]) {
-  if (argc != 3) {
-    fprintf(stderr, "Usage: %s <fileName> <threadNum>\n", argv[0]);
+  if (argc != 4) {
+    fprintf(stderr, "Usage: %s <fileName> <elemNum> <threadNum>\n", argv[0]);
     return 1;
   }
 
-  unsigned threadNum = atoi(argv[2]);
+  unsigned elemNum = atoi(argv[2]);
+  unsigned threadNum = atoi(argv[3]);
   unsigned fileSize = readFile(argv[1]);
 
   openOutputMMap(fileSize);
@@ -66,11 +64,11 @@ int main(int argc, char *argv[]) {
 
   makeThreadLenCount(threadNum);
 
-  long* order = handle(Arr, Brr, N, threadNum);
+  long* order = handle(Arr, Brr, elemNum, threadNum);
 
   closeOutputMMap(fileSize);
 
-  unsigned ok = array_is_sorted(order, N);
+  unsigned ok = array_is_sorted(order, elemNum);
   printf("result: %d\n", ok);
 
   free(Arr);
