@@ -1,6 +1,6 @@
 
-main: Makefile main.c radixsort.c radixsort.h utils.c hex.o writeOutput.c
-	clang main.c radixsort.c utils.c hex.o writeOutput.c -o main -O3
+main: Makefile main.c radixsort.c radixsort.h utils.c hex.cpp writeOutput.c
+	clang main.c radixsort.c utils.c hex.cpp writeOutput.c -o main -g -flto=thin
 
 test: test.c radixsort.c radixsort.h utils.c Makefile
 	clang test.c radixsort.c utils.c -o test -O3
@@ -8,5 +8,5 @@ test: test.c radixsort.c radixsort.h utils.c Makefile
 gen_random: gen_random.c Makefile
 	clang gen_random.c -o gen_random -O3
 
-hex.o: hex.cpp Makefile
-	clang hex.cpp -O3 -c
+clean:
+	rm main test gen_random

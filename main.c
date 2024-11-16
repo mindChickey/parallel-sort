@@ -9,9 +9,10 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include "radixsort.h"
+#include "header.h"
 
 #define N 100
-// #define N 100000000
+//#define N 100000000
 #define MAX_NUM_LEN 11
 
 char inputData[N * MAX_NUM_LEN];
@@ -21,7 +22,6 @@ typedef long (*readHexFT)(char*);
 extern readHexFT readHexFS[16];
 
 unsigned* threadLenCount;
-void writeOutput(struct thread_info* info);
 
 void readFile(const char *filename) {
   FILE* file = fopen(filename, "r");
@@ -67,7 +67,7 @@ void* handle_thread(void* arg){
 
   radix_sort_thread(arg);
   free(arr.start);
-  writeOutput(info);
+  writeOutputThread(info);
   return NULL;
 }
 
@@ -111,6 +111,8 @@ int main(int argc, char *argv[]) {
   unsigned threadNum = atoi(argv[2]);
   readFile(argv[1]);
 
+  openOutputMMap(inputSize);
+
   long* Arr = (long*)malloc(sizeof(long) * (1 << 27));
   long* Brr = (long*)malloc(sizeof(long) * (1 << 27));
 
@@ -119,6 +121,8 @@ int main(int argc, char *argv[]) {
   memset(threadLenCount, 0, threadNumLenSize);
 
   long* order = handle(Arr, Brr, N, threadNum);
+
+  closeOutputMMap(inputSize);
 
   unsigned ok = array_is_sorted(order, N);
   printf("result: %d\n", ok);
