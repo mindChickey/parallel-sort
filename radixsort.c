@@ -116,7 +116,7 @@ long* radix_sort1(long* Arr, long* Brr, unsigned elemNum, unsigned threadNum, vo
 
   pthread_barrier_destroy(&context.barrier);
 
-  return BITS / BUCKET_BITS % 2 == 0 ? Arr : Brr;
+  return args[0].arr;
 }
 
 long* radix_sort(long* Arr, long* Brr, unsigned elemNum, unsigned threadNum) {

@@ -10,41 +10,10 @@ void* handle_thread(void* arg){
   ArrayT arr = parseInput(info->index);
   info->currentArray = arr;
 
-  radix_sort_thread(arg);
+  radix_sort_thread(info);
   free(arr.data);
   writeOutputThread(info);
   return NULL;
-}
-
-long* handle(long* Arr, long* Brr, unsigned elemNum, unsigned threadNum) {
-
-  unsigned countMatrix[BUCKET_COUNT * threadNum];
-
-  context.elemNum = elemNum;
-  context.threadNum = threadNum;
-  context.countMatrix = countMatrix;
-
-  pthread_barrier_init(&context.barrier, NULL, threadNum);
-
-  pthread_t thread_handles[threadNum];
-  struct thread_info args[threadNum];
-  for (unsigned i = 0; i < threadNum; i++) {
-    struct thread_info p = {
-      .arr = Arr,
-      .brr = Brr,
-      .index = i,
-    };
-    args[i] = p;
-    pthread_create(&thread_handles[i], NULL, handle_thread, (void *)(args+i));
-  }
-
-  for (unsigned i = 0; i < threadNum; i++) {
-    pthread_join(thread_handles[i], NULL);
-  }
-
-  pthread_barrier_destroy(&context.barrier);
-
-  return BITS / BUCKET_BITS % 2 == 0 ? Arr : Brr;
 }
 
 int main(int argc, char *argv[]) {
@@ -64,7 +33,7 @@ int main(int argc, char *argv[]) {
 
   makeThreadLenCount(threadNum);
 
-  long* order = handle(Arr, Brr, elemNum, threadNum);
+  long* order = radix_sort1(Arr, Brr, elemNum, threadNum, handle_thread);
 
   unsigned ok = array_is_sorted(order, elemNum);
   printf("result: %s\n", ok ? "succ" : "fail");

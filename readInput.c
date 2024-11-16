@@ -12,10 +12,10 @@ static unsigned inputSize;
 unsigned readFile(const char *filename) {
   FILE* file = fopen(filename, "r");
   struct stat st;
-  fstat(fileno(file), &st);
+  int fd = file->_fileno;
+  fstat(fd, &st);
   inputSize = st.st_size;
-  inputData = malloc(11 * inputSize);
-  fread(inputData, inputSize, 1, file);
+  inputData = mmap(NULL, inputSize, PROT_READ, MAP_PRIVATE, fd, 0);
   fclose(file);
   return inputSize;
 }

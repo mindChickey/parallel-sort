@@ -1,6 +1,6 @@
 
 main: Makefile main.c radixsort.c radixsort.h header.h utils.c hex.cpp writeOutput.c readInput.c
-	clang main.c radixsort.c utils.c hex.cpp writeOutput.c readInput.c -o main -g -flto=thin
+	clang main.c radixsort.c utils.c hex.cpp writeOutput.c readInput.c -o main -O3 -flto=thin
 
 test: test.c radixsort.c radixsort.h utils.c Makefile
 	clang test.c radixsort.c utils.c -o test -O3
