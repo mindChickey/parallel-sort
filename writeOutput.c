@@ -6,16 +6,20 @@
 #include "radixsort.h"
 #include "header.h"
 
-char* outputMMap;
-unsigned LenCount[10];
-unsigned* threadLenCount;
+static char* outputMMap;
+static unsigned LenCount[10];
+static unsigned* threadLenCount;
 
 void makeThreadLenCount(unsigned threadNum){
   threadLenCount = (unsigned*)calloc(10* threadNum, sizeof(unsigned));
 }
 
-void makeLenCount(unsigned index){
-  for(unsigned len = index; len < 10; len+=context.threadNum){
+unsigned* getThreadLenCount(unsigned threadIndex){
+  return threadLenCount + threadIndex * 10;
+}
+
+void makeLenCount(unsigned threadIndex){
+  for(unsigned len = threadIndex; len < 10; len+=context.threadNum){
     for(unsigned i = 0; i < context.threadNum; i++){
       LenCount[len] += threadLenCount[i*10 + len];
     }
@@ -50,7 +54,6 @@ void writeOutputThread(struct thread_info* info){
     outputStart = outputStart + len * n;
     nums = nums + n;
   }
-
 }
 
 void openOutputMMap(unsigned outputSize){

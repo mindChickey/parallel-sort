@@ -5,7 +5,7 @@
 
 void test0(long* Arr, long* Brr){
   long nums0[] = {7, 6, 9}; 
-  long nums1[] = {3, 1, 2}; 
+  long nums1[] = {3, 1, 2, 8}; 
 
   ArrayT arrs[2] = {{nums0, 3}, {nums1, 4}};
   long* order = radix_sort1(Arr, Brr, arrs, 7, 2);

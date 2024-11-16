@@ -6,8 +6,8 @@
 #include <sys/stat.h>
 #include "header.h"
 
-char* inputData;
-unsigned inputSize;
+static char* inputData;
+static unsigned inputSize;
 
 unsigned readFile(const char *filename) {
   FILE* file = fopen(filename, "r");
@@ -22,7 +22,7 @@ unsigned readFile(const char *filename) {
 
 unsigned parseSection(unsigned threadIndex, long* nums, char* start, char* end){
   unsigned n = 0;
-  unsigned* count = threadLenCount + threadIndex * 10;
+  unsigned* count = getThreadLenCount(threadIndex);
   while(start < end){
     char* end = strchr(start, '\n');
     unsigned len_1 = end-start-1;

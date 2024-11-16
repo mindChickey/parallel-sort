@@ -14,12 +14,11 @@ unsigned readFile(const char *filename);
 ArrayT parseInput(unsigned index);
 
 
-extern unsigned LenCount[10];
-extern unsigned* threadLenCount;
 void writeOutputThread(struct thread_info* info);
 void openOutputMMap(unsigned outputSize);
 void closeOutputMMap(unsigned outputSize);
 void makeThreadLenCount(unsigned threadNum);
+unsigned* getThreadLenCount(unsigned threadIndex);
 
 
 unsigned long getClockTime();

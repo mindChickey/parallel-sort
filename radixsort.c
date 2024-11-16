@@ -5,6 +5,16 @@
 
 struct thread_context context;
 
+ArrayT getSection(long* arr, unsigned elemNum, unsigned secNum, unsigned index){
+  ArrayT r;
+  unsigned len = elemNum / secNum;
+  unsigned start = index * len;
+
+  r.start = arr + start;
+  r.length = index == secNum - 1 ? elemNum - start : len;
+  return r;
+}
+
 unsigned* getCountAddress(unsigned thread_index, long mask){
   return &context.countMatrix[BUCKET_COUNT * thread_index + mask];
 }
