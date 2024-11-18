@@ -20,18 +20,22 @@ unsigned readFile(const char *filename) {
   return inputSize;
 }
 
+char* parseANum(unsigned* countArr, char* start, unsigned long* hex){
+  char* end0 = strchr(start, '\n');
+  unsigned len_1 = end0-start-1;
+  countArr[len_1]++;
+  *hex = readHexFS[len_1](start);
+  return end0 + 1;
+}
+
 unsigned parseSection(unsigned threadIndex, long* nums, char* start, char* end){
   unsigned n = 0;
-  unsigned* count = getThreadLenCount(threadIndex);
+  unsigned* countArr = getThreadLenCount(threadIndex);
   while(start < end){
-    char* end0 = strchr(start, '\n');
-    unsigned len_1 = end0-start-1;
-    count[len_1]++;
-
-    unsigned long hex = readHexFS[len_1](start);
+    unsigned long hex;
+    start = parseANum(countArr, start, &hex);
     nums[n] = hex;
     n++;
-    start = end0 + 1;
   }
   return n;
 }
