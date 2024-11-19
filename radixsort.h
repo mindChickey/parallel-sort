@@ -35,8 +35,18 @@ typedef struct {
 } thread_info;
 
 ArrayT getSection(T* arr, unsigned elemNum, unsigned secNum, unsigned index);
-T* radix_sort(T* Arr, T* Brr, unsigned elemNum, unsigned threadNum);
+
+void countBit(thread_info* info, unsigned bit_pos);
+void getIndices(unsigned index, unsigned indices[BUCKET_COUNT]);
+void moveValues(thread_info* info, unsigned bit_pos, unsigned indices[BUCKET_COUNT]);
+void swapArrBrr(thread_info* info);
 T* radix_sort1(T* Arr, T* Brr, unsigned elemNum, unsigned threadNum, void *(*__start_routine)(void *));
+
+T* radix_sort(T* Arr, T* Brr, unsigned elemNum, unsigned threadNum);
 void radix_sort_thread(thread_info* info);
+void radix_sort_msd(thread_info* info, unsigned bit_pos);
+
+T* msd_radix_sort(T* Arr, T* Brr, unsigned elemNum, unsigned threadNum);
+void* msd_radix_sort_thread(void* arg);
 
 #endif

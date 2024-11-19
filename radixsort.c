@@ -19,7 +19,7 @@ unsigned* getCountAddress(unsigned thread_index, unsigned mask){
   return &context.countMatrix[BUCKET_COUNT * thread_index + mask];
 }
 
-void count(thread_info* info, unsigned bit_pos){
+void countBit(thread_info* info, unsigned bit_pos){
   unsigned* counts = getCountAddress(info->index, 0);
   memset(counts, 0, sizeof(unsigned) * BUCKET_COUNT);
   ArrayT arr = info->currentArray;
@@ -29,9 +29,8 @@ void count(thread_info* info, unsigned bit_pos){
   }
 }
 
-void getIndices(thread_info* info, unsigned indices[BUCKET_COUNT]){
+void getIndices(unsigned index, unsigned indices[BUCKET_COUNT]){
   memset(indices, 0, BUCKET_COUNT * sizeof(unsigned));
-  unsigned index = info->index;
   for(unsigned i = 0; i < index; i++){
     unsigned* counts = getCountAddress(i, 0);
     for(unsigned k = 0; k < BUCKET_COUNT; k++){
@@ -64,24 +63,24 @@ void swapArrBrr(thread_info* info){
   T* tmp = info->arr;
   info->arr = info->brr;
   info->brr = tmp;
-  info->currentArray = getSection(info->arr, context.elemNum, context.threadNum, info->index);
 }
 
 void radix_sort_thread(thread_info* info){
   unsigned indices[BUCKET_COUNT];
 
   for (unsigned bit_pos = 0; bit_pos < BITS; bit_pos += BUCKET_BITS) {
-    count(info, bit_pos);
+    countBit(info, bit_pos);
 
     pthread_barrier_wait(&context.barrier);
-    getIndices(info, indices);
+    getIndices(info->index, indices);
     moveValues(info, bit_pos, indices);
     pthread_barrier_wait(&context.barrier);
     swapArrBrr(info);
+    info->currentArray = getSection(info->arr, context.elemNum, context.threadNum, info->index);
   }
 }
 
-void* standard_radix_sort_thread(void* arg){
+void* lsd_radix_sort_thread(void* arg){
   thread_info* info = (thread_info*)arg;
   info->currentArray = getSection(info->arr, context.elemNum, context.threadNum, info->index);
   radix_sort_thread(info);
@@ -111,10 +110,9 @@ T* radix_sort1(T* Arr, T* Brr, unsigned elemNum, unsigned threadNum, void *(*__s
   }
 
   pthread_barrier_destroy(&context.barrier);
-
-  return args[0].arr;
+  return BITS / BUCKET_BITS % 2 == 0 ? Arr : Brr;
 }
 
 T* radix_sort(T* Arr, T* Brr, unsigned elemNum, unsigned threadNum) {
-  return radix_sort1(Arr, Brr, elemNum, threadNum, standard_radix_sort_thread);
+  return radix_sort1(Arr, Brr, elemNum, threadNum, lsd_radix_sort_thread);
 }
